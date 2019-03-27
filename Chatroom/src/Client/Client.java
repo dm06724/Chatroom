@@ -1,26 +1,29 @@
 package Client;
 import java.awt.EventQueue;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+import java.util.*;
 
-import javax.swing.JFrame;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.JButton;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
+import javax.swing.*;
+import java.awt.event.*;
 
 public class Client {
 
 	private JFrame frame;
-	private static Socket s;
-	private static DataInputStream din;
-	private static DataOutputStream dout;
 	private JTextField inputField;
-	private static JTextArea msgbox = new JTextArea();
+	private static JTextArea outputArea = new JTextArea();
+	private JTextField addressField;
+	private JTextField usernameField;
+	private JTextField portField;
 	
+	private Socket s;
+	private BufferedReader reader;
+	private PrintWriter writer;
+	private ArrayList<String> users = new ArrayList();
+	private boolean isConnected = false;
+	private String username;
+	private String address;
+	private int port;
 	
 	/**
 	 * Launch the application.
@@ -36,20 +39,28 @@ public class Client {
 				}
 			}
 		});
-		
-		String msgin = "";
-		
-		try {
-			s = new Socket("127.0.0.1", 2001);
-			din = new DataInputStream(s.getInputStream());
-			dout = new DataOutputStream(s.getOutputStream());
-			
-			while(!msgin.equals("exit")) {
-				msgin = din.readUTF();
-				msgbox.setText(msgbox.getText().trim() + "\n Server:" + msgin);
+	}
+	
+	public void ClientThread() {
+		Thread ClientReader = new Thread(new ClientReader());
+		ClientReader.start();
+	}
+	
+	public void addUser(String name) {
+		users.add(name);
+	}
+	
+	public class ClientReader implements Runnable{
+		@Override
+		public void run() {
+			String stream;
+			try {
+				while((stream = reader.readLine()) != null) { //receives sent message
+					outputArea.append(stream);
+				}
+			}catch(Exception e) {
+				e.printStackTrace();
 			}
-		}catch(Exception e) {
-			
 		}
 	}
 
@@ -65,32 +76,94 @@ public class Client {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 453, 452);
+		frame.setBounds(100, 100, 450, 550);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		
-		msgbox.setBounds(10, 11, 417, 360);
-		frame.getContentPane().add(msgbox);
+		JLabel usernameLab = new JLabel("Username");
+		usernameLab.setBounds(167, 11, 55, 14);
+		frame.getContentPane().add(usernameLab);
+		outputArea.setBounds(10, 61, 417, 406);
+		frame.getContentPane().add(outputArea);
 		
 		inputField = new JTextField();
-		inputField.setBounds(10, 382, 318, 20);
+		inputField.setBounds(10, 478, 318, 20);
 		frame.getContentPane().add(inputField);
 		inputField.setColumns(10);
 		
-		JButton msgSend = new JButton("SEND");
-		msgSend.addActionListener(new ActionListener() {
+		JButton sendBtn = new JButton("SEND");
+		sendBtn.setBounds(338, 477, 89, 23);
+		sendBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {
-					String msgout = "";
-					msgout = inputField.getText().trim();
-					dout.writeUTF(msgout);
-				} catch (IOException e) {
+					writer.println(inputField.getText());
+					writer.flush();
+				}catch(Exception e) {
 					e.printStackTrace();
+				}
+				inputField.setText("");
+				inputField.requestFocus();
+			}
+		});
+		frame.getContentPane().add(sendBtn);
+		
+		JLabel addressLab = new JLabel("Address");
+		addressLab.setBounds(10, 11, 46, 14);
+		frame.getContentPane().add(addressLab);
+		
+		addressField = new JTextField();
+		addressField.setText("127.0.0.1");
+		addressField.setEnabled(false);
+		addressField.setEditable(false);
+		addressField.setBounds(66, 8, 86, 20);
+		frame.getContentPane().add(addressField);
+		addressField.setColumns(10);
+		
+		JLabel portLab = new JLabel("Port");
+		portLab.setBounds(10, 36, 46, 14);
+		frame.getContentPane().add(portLab);
+		
+		usernameField = new JTextField();
+		usernameField.setBounds(232, 8, 86, 20);
+		frame.getContentPane().add(usernameField);
+		usernameField.setColumns(10);
+		
+		portField = new JTextField();
+		portField.setBounds(66, 33, 86, 20);
+		frame.getContentPane().add(portField);
+		portField.setColumns(10);
+		
+		JButton connectBtn = new JButton("CONNECT");
+		connectBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				address = addressField.getText();
+				port = Integer.parseInt(portField.getText());
+				
+				if(isConnected) {
+					outputArea.append("You all already connect to SERVER");
+				}else {
+					username = usernameField.getText();
+					usernameField.setEditable(false);
+					
+					try {
+						s = new Socket(address, port);
+						InputStreamReader sr = new InputStreamReader(s.getInputStream());
+						reader = new BufferedReader(sr);
+						writer = new PrintWriter(s.getOutputStream());
+						writer.println(username + " has connected.");
+						writer.flush();
+						isConnected = true;
+					}catch(Exception e) {
+						outputArea.append("Connection to server failed!");
+					}
 				}
 			}
 		});
-		msgSend.setBounds(338, 381, 89, 23);
-		frame.getContentPane().add(msgSend);
+		connectBtn.setBounds(206, 32, 100, 23);
+		frame.getContentPane().add(connectBtn);
+		
+		JButton disconnectBtn = new JButton("DISCONNECT");
+		disconnectBtn.setBounds(316, 32, 111, 23);
+		frame.getContentPane().add(disconnectBtn);
 	}
-
 }
