@@ -17,14 +17,14 @@ import javax.swing.JLabel;
 public class Server {
 
 	private JFrame frame;
-	private static ServerSocket ss;
-	private static Socket s;
-	private ArrayList clientOutputStreams;
-	private ArrayList<String> users;
 	private JTextField addressField;
 	private JTextField portField;
 	private JTextArea outputArea;
 	
+	private static ServerSocket ss;
+	private static Socket s;
+	private ArrayList clientOutputStreams;
+	private ArrayList<String> users;
 	private String address;
 	private int port;
 	/**
@@ -49,10 +49,10 @@ public class Server {
 		PrintWriter client;
 		Socket s;
 		
-		public ClientHandler(Socket clientSocket, PrintWriter user) {
+		public ClientHandler(Socket cs, PrintWriter user) {
 			client = user;
 			try {
-				s = clientSocket;
+				s = cs;
 				InputStreamReader isr = new InputStreamReader(s.getInputStream());
 				reader = new BufferedReader(isr);
 			}catch(Exception e) {
@@ -63,9 +63,11 @@ public class Server {
 		@Override
 		public void run() {
 			String message;
+			String[] data;
 			try {
 				while((message = reader.readLine()) != null) {
-					sendToAll(message);
+					data = message.split("|");
+					sendToAll(data[0] + "|" + data[1]);
 				}
 			}catch(Exception e) {
 				e.printStackTrace();
@@ -88,7 +90,7 @@ public class Server {
 					
 					Thread listener = new Thread(new ClientHandler(s, writer));
 					listener.start();
-					outputArea.append("New Connection");
+					outputArea.append("\nNew connection.");
 				}
 			}catch(Exception e) {
 				e.printStackTrace();
@@ -168,7 +170,7 @@ public class Server {
 				outputArea.setText("");
 			}
 		});
-		cleanBtn.setBounds(335, 375, 89, 23);
+		cleanBtn.setBounds(335, 405, 89, 23);
 		frame.getContentPane().add(cleanBtn);
 		
 		outputArea = new JTextArea();

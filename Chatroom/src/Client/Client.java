@@ -11,10 +11,10 @@ public class Client {
 
 	private JFrame frame;
 	private JTextField inputField;
-	private static JTextArea outputArea = new JTextArea();
 	private JTextField addressField;
 	private JTextField usernameField;
 	private JTextField portField;
+	private JTextArea outputArea;
 	
 	private Socket s;
 	private BufferedReader reader;
@@ -46,17 +46,24 @@ public class Client {
 		ClientReader.start();
 	}
 	
-	public void addUser(String name) {
-		users.add(name);
+	public void addUser(String user) {
+		users.add(user);
+	}
+	
+	public void removeUser(String user) {
+		users.remove(user);
 	}
 	
 	public class ClientReader implements Runnable{
 		@Override
 		public void run() {
 			String stream;
+			String[] data;
 			try {
 				while((stream = reader.readLine()) != null) { //receives sent message
-					outputArea.append(stream);
+					data = stream.split("|");
+					outputArea.append("\n" + data[0] + ": " + data[1]);
+					outputArea.setCaretPosition(outputArea.getDocument().getLength());
 				}
 			}catch(Exception e) {
 				e.printStackTrace();
@@ -83,6 +90,9 @@ public class Client {
 		JLabel usernameLab = new JLabel("Username");
 		usernameLab.setBounds(167, 11, 55, 14);
 		frame.getContentPane().add(usernameLab);
+		
+		outputArea = new JTextArea();
+		outputArea.setLineWrap(true);
 		outputArea.setBounds(10, 61, 417, 406);
 		frame.getContentPane().add(outputArea);
 		
@@ -96,7 +106,8 @@ public class Client {
 		sendBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {
-					writer.println(inputField.getText());
+					String message = inputField.getText();
+					writer.println(username + "|" + message);
 					writer.flush();
 				}catch(Exception e) {
 					e.printStackTrace();
@@ -138,24 +149,24 @@ public class Client {
 			public void actionPerformed(ActionEvent arg0) {
 				address = addressField.getText();
 				port = Integer.parseInt(portField.getText());
+				username = usernameField.getText();
+				usernameField.setEditable(false);
 				
 				if(isConnected) {
-					outputArea.append("You all already connect to SERVER");
+					outputArea.append("\nYou all already connected to server.");
 				}else {
-					username = usernameField.getText();
-					usernameField.setEditable(false);
-					
 					try {
 						s = new Socket(address, port);
 						InputStreamReader sr = new InputStreamReader(s.getInputStream());
 						reader = new BufferedReader(sr);
 						writer = new PrintWriter(s.getOutputStream());
-						writer.println(username + " has connected.");
+						writer.println("\nServer|" + username + " has connected.");
 						writer.flush();
 						isConnected = true;
 					}catch(Exception e) {
-						outputArea.append("Connection to server failed!");
+						outputArea.append("\nConnection to server failed.");
 					}
+					ClientThread();
 				}
 			}
 		});
