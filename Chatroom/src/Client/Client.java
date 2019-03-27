@@ -1,3 +1,4 @@
+package Client;
 import java.awt.EventQueue;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
