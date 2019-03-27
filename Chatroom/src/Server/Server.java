@@ -51,7 +51,7 @@ public class Server {
 				msgbox.setText(msgbox.getText().trim() + "\n Client:" + msgin);
 			}
 		}catch(Exception e) {
-			
+			e.printStackTrace();
 		}
 	}
 

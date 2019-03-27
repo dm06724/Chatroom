@@ -49,7 +49,7 @@ public class Client {
 				msgbox.setText(msgbox.getText().trim() + "\n Server:" + msgin);
 			}
 		}catch(Exception e) {
-			e.printStackTrace();
+			
 		}
 	}
 
