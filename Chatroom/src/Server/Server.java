@@ -62,12 +62,24 @@ public class Server {
 
 		@Override
 		public void run() {
-			String message;
+			String stream;
 			String[] data;
 			try {
-				while((message = reader.readLine()) != null) {
-					data = message.split("|");
-					sendToAll(data[0] + "|" + data[1]);
+				while((stream = reader.readLine()) != null) {
+					data = stream.split("\\|");
+					for(String a:data) {
+						System.out.println(a);
+					}
+					if(data[2].equals("message")) {
+						sendToAll(stream);
+					}
+					else if(data[2].equals("connect")) {
+						sendToAll(data[0] + "|" + data[1] + "|message");
+						addUser(data[0]);
+					}
+					else if(data[2].equals("disconnect")) {
+						removeUser(data[0]);
+					}
 				}
 			}catch(Exception e) {
 				e.printStackTrace();
@@ -90,7 +102,7 @@ public class Server {
 					
 					Thread listener = new Thread(new ClientHandler(s, writer));
 					listener.start();
-					outputArea.append("\nNew connection.");
+					outputArea.append("New connection.\n");
 				}
 			}catch(Exception e) {
 				e.printStackTrace();
@@ -149,7 +161,6 @@ public class Server {
 		
 		addressField = new JTextField();
 		addressField.setBounds(65, 406, 97, 20);
-		addressField.setEnabled(false);
 		addressField.setEditable(false);
 		addressField.setText("127.0.0.1");
 		frame.getContentPane().add(addressField);
@@ -188,7 +199,7 @@ public class Server {
 					Thread starter = new Thread(new ServerStart());
 					starter.start();
 					
-					outputArea.append("Server started.");
+					outputArea.append("Server started.\n");
 				}
 			}
 		});
@@ -199,7 +210,7 @@ public class Server {
 		endBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				Thread.currentThread().interrupt();
-				outputArea.append("Server stopped.");
+				outputArea.append("Server stopped.\n");
 			}
 		});
 		endBtn.setBounds(87, 459, 75, 23);

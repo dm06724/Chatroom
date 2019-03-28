@@ -6,6 +6,8 @@ import java.util.*;
 
 import javax.swing.*;
 import java.awt.event.*;
+import java.awt.Panel;
+import java.awt.List;
 
 public class Client {
 
@@ -15,6 +17,7 @@ public class Client {
 	private JTextField usernameField;
 	private JTextField portField;
 	private JTextArea outputArea;
+	private List userList;
 	
 	private Socket s;
 	private BufferedReader reader;
@@ -48,6 +51,7 @@ public class Client {
 	
 	public void addUser(String user) {
 		users.add(user);
+		userList.add(user);
 	}
 	
 	public void removeUser(String user) {
@@ -60,10 +64,18 @@ public class Client {
 			String stream;
 			String[] data;
 			try {
-				while((stream = reader.readLine()) != null) { //receives sent message
-					data = stream.split("|");
-					outputArea.append("\n" + data[0] + ": " + data[1]);
-					outputArea.setCaretPosition(outputArea.getDocument().getLength());
+				while((stream = reader.readLine()) != null) {
+					data = stream.split("\\|");
+					if(data[2].equals("message")) {
+						outputArea.append(data[0] + ": " + data[1] + "\n");
+						outputArea.setCaretPosition(outputArea.getDocument().getLength());
+					}
+					else if(data[2].equals("connect")) {
+						addUser(data[0]);
+					}
+					else if(data[2].equals("disconnect")) {
+						removeUser(data[0]);
+					}
 				}
 			}catch(Exception e) {
 				e.printStackTrace();
@@ -83,17 +95,17 @@ public class Client {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 450, 550);
+		frame.setBounds(100, 100, 500, 550);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		
 		JLabel usernameLab = new JLabel("Username");
-		usernameLab.setBounds(167, 11, 55, 14);
+		usernameLab.setBounds(167, 11, 77, 14);
 		frame.getContentPane().add(usernameLab);
 		
 		outputArea = new JTextArea();
 		outputArea.setLineWrap(true);
-		outputArea.setBounds(10, 61, 417, 406);
+		outputArea.setBounds(10, 61, 318, 406);
 		frame.getContentPane().add(outputArea);
 		
 		inputField = new JTextField();
@@ -106,8 +118,7 @@ public class Client {
 		sendBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {
-					String message = inputField.getText();
-					writer.println(username + "|" + message);
+					writer.println(username + "|" + inputField.getText() + "|message");
 					writer.flush();
 				}catch(Exception e) {
 					e.printStackTrace();
@@ -135,7 +146,7 @@ public class Client {
 		frame.getContentPane().add(portLab);
 		
 		usernameField = new JTextField();
-		usernameField.setBounds(232, 8, 86, 20);
+		usernameField.setBounds(228, 8, 122, 20);
 		frame.getContentPane().add(usernameField);
 		usernameField.setColumns(10);
 		
@@ -153,28 +164,50 @@ public class Client {
 				usernameField.setEditable(false);
 				
 				if(isConnected) {
-					outputArea.append("\nYou all already connected to server.");
+					outputArea.append("You all already connected to server.\n");
 				}else {
 					try {
 						s = new Socket(address, port);
 						InputStreamReader sr = new InputStreamReader(s.getInputStream());
 						reader = new BufferedReader(sr);
 						writer = new PrintWriter(s.getOutputStream());
-						writer.println("\nServer|" + username + " has connected.");
+						writer.println(username + "|has connected.|connect");
 						writer.flush();
 						isConnected = true;
 					}catch(Exception e) {
-						outputArea.append("\nConnection to server failed.");
+						outputArea.append("Connection to server failed.\n");
 					}
 					ClientThread();
 				}
 			}
 		});
-		connectBtn.setBounds(206, 32, 100, 23);
+		connectBtn.setBounds(163, 32, 81, 23);
 		frame.getContentPane().add(connectBtn);
 		
 		JButton disconnectBtn = new JButton("DISCONNECT");
-		disconnectBtn.setBounds(316, 32, 111, 23);
+		disconnectBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				try {
+					writer.println(username + "|" + "has disconnected.|disconnect");
+					writer.flush();
+					outputArea.append("Disconnected.\n");
+					s.close();
+					isConnected = false;
+					usernameField.setEditable(true);
+				}catch(Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		disconnectBtn.setBounds(250, 32, 100, 23);
 		frame.getContentPane().add(disconnectBtn);
+		
+		Panel panel = new Panel();
+		panel.setBounds(340, 61, 134, 406);
+		frame.getContentPane().add(panel);
+		
+		userList = new List();
+		userList.setMultipleSelections(false);
+		panel.add(userList);
 	}
 }
