@@ -11,6 +11,8 @@ import java.awt.BorderLayout;
 import javax.swing.JTextField;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.event.ActionEvent;
 import javax.swing.JLabel;
 
@@ -24,6 +26,7 @@ public class Server {
 	private static ServerSocket ss;
 	private static Socket s;
 	private ArrayList clientOutputStreams;
+	private ArrayList<ClientHandler> clients;
 	private ArrayList<String> users;
 	private String address;
 	private int port;
@@ -49,12 +52,13 @@ public class Server {
 		PrintWriter client;
 		Socket s;
 		
-		public ClientHandler(Socket cs, PrintWriter user) {
+		public ClientHandler(Socket cs, PrintWriter user) throws Exception{
 			client = user;
 			try {
 				s = cs;
 				InputStreamReader isr = new InputStreamReader(s.getInputStream());
 				reader = new BufferedReader(isr);
+				clients.add(this);
 			}catch(Exception e) {
 				e.printStackTrace();
 			}
@@ -64,8 +68,10 @@ public class Server {
 		public void run() {
 			String stream;
 			String[] data;
+			Boolean dead = false;
 			try {
-				while((stream = reader.readLine()) != null) {
+				while(!dead) {
+					stream = reader.readLine();
 					data = stream.split("\\|");
 					for(String a:data) {
 						System.out.println(a);
@@ -75,10 +81,22 @@ public class Server {
 					}
 					else if(data[2].equals("connect")) {
 						sendToAll(data[0] + "|" + data[1] + "|message");
+						sendToAll("X|X|listreset");
 						addUser(data[0]);
+						for(String s : users) {
+							sendToAll(s+"|X|quietRepop");
+						}
+						
 					}
 					else if(data[2].equals("disconnect")) {
+						s.close();
 						removeUser(data[0]);
+						sendToAll(data[0]+"| has disconnected.|message");
+						sendToAll("X|X|listreset");
+						for(String s : users) {
+							sendToAll(s+"|X|quietRepop");
+						}
+						dead = true;
 					}
 				}
 			}catch(Exception e) {
@@ -155,6 +173,15 @@ public class Server {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		
+		//when closing the server, tell all its relatives and die
+		/*frame.addWindowListener(new WindowAdapter(){
+			public void windowClosing(WindowEvent e) {
+				for(ClientHandler cl : clients) {
+					cl.
+				}
+			}
+		});*/
+		
 		JLabel addressLabel = new JLabel("Address");
 		addressLabel.setBounds(10, 409, 46, 14);
 		frame.getContentPane().add(addressLabel);
@@ -209,6 +236,7 @@ public class Server {
 		JButton endBtn = new JButton("END");
 		endBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				sendToAll("X|X|die");
 				Thread.currentThread().interrupt();
 				outputArea.append("Server stopped.\n");
 			}

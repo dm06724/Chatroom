@@ -50,12 +50,17 @@ public class Client {
 	}
 	
 	public void addUser(String user) {
-		users.add(user);
+		//users.add(user);
 		userList.add(user);
 	}
 	
 	public void removeUser(String user) {
-		users.remove(user);
+		//users.remove(user);
+		userList.remove(user);
+	}
+	
+	public void removeAllUsers() {
+		userList.removeAll();
 	}
 	
 	public class ClientReader implements Runnable{
@@ -75,6 +80,15 @@ public class Client {
 					}
 					else if(data[2].equals("disconnect")) {
 						removeUser(data[0]);
+					}
+					else if(data[2].equals("listreset")) {
+						removeAllUsers();
+					}
+					else if(data[2].equals("quietRepop")) {
+						addUser(data[0]);
+					}
+					else if(data[2].equals("die")) {
+						frame.dispose();
 					}
 				}
 			}catch(Exception e) {
@@ -98,6 +112,17 @@ public class Client {
 		frame.setBounds(100, 100, 500, 550);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
+		
+		//when a client closes, DON'T panic, still die
+		frame.addWindowListener(new WindowAdapter(){
+			public void windowClosing(WindowEvent e) {
+				writer.println(username + "|X|disconnect");
+				writer.flush();
+				outputArea.append("Disconnected.\n");
+				isConnected = false;
+			}
+		});
+		
 		
 		JLabel usernameLab = new JLabel("Username");
 		usernameLab.setBounds(167, 11, 77, 14);
@@ -188,7 +213,7 @@ public class Client {
 		disconnectBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {
-					writer.println(username + "|" + "has disconnected.|disconnect");
+					writer.println(username + "|X|disconnect");
 					writer.flush();
 					outputArea.append("Disconnected.\n");
 					s.close();
