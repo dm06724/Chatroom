@@ -18,7 +18,7 @@ import javax.swing.JLabel;
 
 public class Server {
 
-	private JFrame frame;
+	private JFrame frmServer;
 	private JTextField addressField;
 	private JTextField portField;
 	private JTextArea outputArea;
@@ -38,7 +38,7 @@ public class Server {
 			public void run() {
 				try {
 					Server window = new Server();
-					window.frame.setVisible(true);
+					window.frmServer.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -68,7 +68,7 @@ public class Server {
 		public void run() {
 			String stream;
 			String[] data;
-			Boolean dead = false;
+			boolean dead = false;
 			try {
 				while(!dead) {
 					stream = reader.readLine();
@@ -80,19 +80,24 @@ public class Server {
 						sendToAll(stream);
 					}
 					else if(data[2].equals("connect")) {
-						sendToAll(data[0] + "|" + data[1] + "|message");
+						if(users.contains(data[0])) {
+							//outputArea.append("Duplicate Username\n");
+						}
+						sendToAll(data[0] + "|X|connect");
 						sendToAll("X|X|listreset");
+						outputArea.append(data[0] + " has connected.\n");
 						addUser(data[0]);
 						for(String s : users) {
 							sendToAll(s+"|X|quietRepop");
 						}
-						
+						dead = false;
 					}
 					else if(data[2].equals("disconnect")) {
 						s.close();
 						removeUser(data[0]);
-						sendToAll(data[0]+"| has disconnected.|message");
+						sendToAll(data[0]+"|X|disconnect");
 						sendToAll("X|X|listreset");
+						outputArea.append(data[0] + " has disconnected.\n");
 						for(String s : users) {
 							sendToAll(s+"|X|quietRepop");
 						}
@@ -120,7 +125,6 @@ public class Server {
 					
 					Thread listener = new Thread(new ClientHandler(s, writer));
 					listener.start();
-					outputArea.append("New connection.\n");
 				}
 			}catch(Exception e) {
 				e.printStackTrace();
@@ -168,38 +172,46 @@ public class Server {
 		Thread starter = new Thread(new ServerStart());
 		starter.start();
 		
-		frame = new JFrame();
-		frame.setBounds(100, 100, 450, 532);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.getContentPane().setLayout(null);
+		frmServer = new JFrame();
+		frmServer.setResizable(false);
+		frmServer.setTitle("Server");
+		frmServer.setBounds(100, 100, 450, 520);
+		frmServer.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmServer.getContentPane().setLayout(null);
 		
 		//when closing the server, tell all its relatives and die
-		/*frame.addWindowListener(new WindowAdapter(){
+		frmServer.addWindowListener(new WindowAdapter(){
 			public void windowClosing(WindowEvent e) {
-				for(ClientHandler cl : clients) {
-					cl.
+				try {
+					sendToAll("X|X|close");
+					for(ClientHandler cl : clients) {
+						cl.s.close();
+					}
+				}catch(Exception ex) {
+					ex.printStackTrace();
 				}
 			}
-		});*/
+		});
 		
 		JLabel addressLabel = new JLabel("Address");
 		addressLabel.setBounds(10, 409, 46, 14);
-		frame.getContentPane().add(addressLabel);
+		frmServer.getContentPane().add(addressLabel);
 		
 		addressField = new JTextField();
+		addressField.setEnabled(false);
 		addressField.setBounds(65, 406, 97, 20);
 		addressField.setEditable(false);
 		addressField.setText("127.0.0.1");
-		frame.getContentPane().add(addressField);
+		frmServer.getContentPane().add(addressField);
 		addressField.setColumns(10);
 		
 		JLabel portLabel = new JLabel("Port");
 		portLabel.setBounds(10, 437, 46, 14);
-		frame.getContentPane().add(portLabel);
+		frmServer.getContentPane().add(portLabel);
 		
 		portField = new JTextField();
 		portField.setBounds(65, 434, 97, 20);
-		frame.getContentPane().add(portField);
+		frmServer.getContentPane().add(portField);
 		portField.setColumns(10);
 		
 		JButton cleanBtn = new JButton("CLEAR");
@@ -209,11 +221,12 @@ public class Server {
 			}
 		});
 		cleanBtn.setBounds(335, 405, 89, 23);
-		frame.getContentPane().add(cleanBtn);
+		frmServer.getContentPane().add(cleanBtn);
 		
 		outputArea = new JTextArea();
+		outputArea.setEditable(false);
 		outputArea.setBounds(10, 11, 414, 387);
-		frame.getContentPane().add(outputArea);
+		frmServer.getContentPane().add(outputArea);
 		
 		JButton startBtn = new JButton("START");
 		startBtn.addActionListener(new ActionListener() {
@@ -222,26 +235,33 @@ public class Server {
 				address = addressField.getText();
 				port = Integer.parseInt(portField.getText());
 				
-				if(!(portField.getText().equals(""))) {
+				if(portField.getText().matches("\\d\\d\\d\\d")) {
 					Thread starter = new Thread(new ServerStart());
 					starter.start();
+					startBtn.setEnabled(false);
+					portField.setEditable(false);
 					
-					outputArea.append("Server started.\n");
+					outputArea.append("Server started on port " + port + ".\n");
+				}
+				else {
+					outputArea.append("Please enter a valid port number.");
 				}
 			}
 		});
 		startBtn.setBounds(10, 459, 75, 23);
-		frame.getContentPane().add(startBtn);
+		frmServer.getContentPane().add(startBtn);
 		
 		JButton endBtn = new JButton("END");
 		endBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				sendToAll("X|X|die");
+				sendToAll("X|X|close");
 				Thread.currentThread().interrupt();
+				startBtn.setEnabled(true);
 				outputArea.append("Server stopped.\n");
+				portField.setEditable(true);
 			}
 		});
 		endBtn.setBounds(87, 459, 75, 23);
-		frame.getContentPane().add(endBtn);
+		frmServer.getContentPane().add(endBtn);
 	}
 }
