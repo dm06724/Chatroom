@@ -215,7 +215,7 @@ public class Client {
 				if(usernameField.getText().equals("")) {
 					outputArea.append("Please enter a username.\n");
 				}
-				else if(!portField.getText().matches("\\d\\d\\d\\d")) {
+				else if(!portField.getText().matches("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$")) {
 					outputArea.append("Please enter a valid port number.\n");
 				}
 				else if(isConnected) {
