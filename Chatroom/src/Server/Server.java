@@ -80,9 +80,6 @@ public class Server {
 						sendToAll(stream);
 					}
 					else if(data[2].equals("connect")) {
-						if(users.contains(data[0])) {
-							//outputArea.append("Duplicate Username\n");
-						}
 						sendToAll(data[0] + "|X|connect");
 						sendToAll("X|X|listreset");
 						outputArea.append(data[0] + " has connected.\n");
@@ -122,7 +119,6 @@ public class Server {
 					s = ss.accept();
 					PrintWriter writer = new PrintWriter(s.getOutputStream());
 					clientOutputStreams.add(writer);
-					
 					Thread listener = new Thread(new ClientHandler(s, writer));
 					listener.start();
 				}
@@ -169,8 +165,8 @@ public class Server {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		Thread starter = new Thread(new ServerStart());
-		starter.start();
+		//Thread starter = new Thread(new ServerStart());
+		//starter.start();
 		
 		frmServer = new JFrame();
 		frmServer.setResizable(false);
@@ -187,6 +183,7 @@ public class Server {
 					for(ClientHandler cl : clients) {
 						cl.s.close();
 					}
+					ss.close();
 				}catch(Exception ex) {
 					ex.printStackTrace();
 				}
@@ -194,7 +191,7 @@ public class Server {
 		});
 		
 		JLabel addressLabel = new JLabel("Address");
-		addressLabel.setBounds(10, 409, 46, 14);
+		addressLabel.setBounds(10, 409, 63, 14);
 		frmServer.getContentPane().add(addressLabel);
 		
 		addressField = new JTextField();
@@ -231,19 +228,16 @@ public class Server {
 		JButton startBtn = new JButton("START");
 		startBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				String temp = portField.getText();
 				address = addressField.getText();
 				port = Integer.parseInt(portField.getText());
 				
-				if(portField.getText().matches("\\d\\d\\d\\d")) {
+				if(portField.getText().matches("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$")) {
 					Thread starter = new Thread(new ServerStart());
 					starter.start();
 					startBtn.setEnabled(false);
 					portField.setEditable(false);
-					
 					outputArea.append("Server started on port " + port + ".\n");
-				}
-				else {
+				}else {
 					outputArea.append("Please enter a valid port number.");
 				}
 			}
@@ -254,11 +248,16 @@ public class Server {
 		JButton endBtn = new JButton("END");
 		endBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				sendToAll("X|X|close");
-				Thread.currentThread().interrupt();
-				startBtn.setEnabled(true);
-				outputArea.append("Server stopped.\n");
-				portField.setEditable(true);
+				try {
+					sendToAll("X|X|close");
+					ss.close();
+					Thread.currentThread().interrupt();
+					startBtn.setEnabled(true);
+					portField.setEditable(true);
+					outputArea.append("Server stopped.\n");
+				}catch(Exception ex) {
+					ex.printStackTrace();
+				}
 			}
 		});
 		endBtn.setBounds(87, 459, 75, 23);

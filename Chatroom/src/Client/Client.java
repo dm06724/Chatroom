@@ -103,7 +103,7 @@ public class Client {
 						outputArea.append("Server has ended.\n");
 						s.close();
 						isConnected = false;
-						connectBtn.setEnabled(false);
+						connectBtn.setEnabled(true);
 						usernameField.setEditable(true);
 						portField.setEditable(true);
 						userList.removeAll();
@@ -130,7 +130,7 @@ public class Client {
 		frmClient = new JFrame();
 		frmClient.setResizable(false);
 		frmClient.setTitle("Client");
-		frmClient.setBounds(100, 100, 500, 550);
+		frmClient.setBounds(100, 100, 485, 536);
 		frmClient.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmClient.getContentPane().setLayout(null);
 		
@@ -138,17 +138,21 @@ public class Client {
 		frmClient.addWindowListener(new WindowAdapter(){
 			public void windowClosing(WindowEvent e) {
 				if(isConnected) {
-					writer.println(username + "|X|disconnect");
-					writer.flush();
-					outputArea.append("You have been disconnected.\n");
-					isConnected = false;
+					try {
+						writer.println(username + "|X|disconnect");
+						writer.flush();
+						s.close();
+						isConnected = false;
+						outputArea.append("You have been disconnected.\n");
+					}catch(Exception ex) {
+						ex.printStackTrace();
+					}
 				}
 			}
 		});
 		
-		
 		JLabel usernameLab = new JLabel("Username");
-		usernameLab.setBounds(167, 11, 77, 14);
+		usernameLab.setBounds(191, 11, 60, 14);
 		frmClient.getContentPane().add(usernameLab);
 		
 		outputArea = new JTextArea();
@@ -163,7 +167,7 @@ public class Client {
 		inputField.setColumns(10);
 		
 		JButton sendBtn = new JButton("SEND");
-		sendBtn.setBounds(338, 477, 89, 23);
+		sendBtn.setBounds(338, 477, 136, 23);
 		sendBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				try {
@@ -179,7 +183,7 @@ public class Client {
 		frmClient.getContentPane().add(sendBtn);
 		
 		JLabel addressLab = new JLabel("Address");
-		addressLab.setBounds(10, 11, 46, 14);
+		addressLab.setBounds(10, 11, 60, 14);
 		frmClient.getContentPane().add(addressLab);
 		
 		addressField = new JTextField();
@@ -195,7 +199,7 @@ public class Client {
 		frmClient.getContentPane().add(portLab);
 		
 		usernameField = new JTextField();
-		usernameField.setBounds(228, 8, 122, 20);
+		usernameField.setBounds(257, 8, 107, 20);
 		frmClient.getContentPane().add(usernameField);
 		usernameField.setColumns(10);
 		
@@ -231,19 +235,20 @@ public class Client {
 						writer.println(username + "|X|connect");
 						writer.flush();
 						isConnected = true;
-						//connectBtn.setEnabled(false);
+						connectBtn.setEnabled(false);
 						dead = false;
 					}catch(Exception e) {
 						outputArea.append("Connection to server failed.\n");
 						usernameField.setEditable(true);
 						portField.setEditable(true);
+						connectBtn.setEnabled(true);
 						isConnected = false;
 					}
 					ClientThread();
 				}
 			}
 		});
-		connectBtn.setBounds(163, 32, 89, 23);
+		connectBtn.setBounds(162, 32, 89, 23);
 		frmClient.getContentPane().add(connectBtn);
 		
 		JButton disconnectBtn = new JButton("DISCONNECT");
@@ -261,14 +266,23 @@ public class Client {
 						portField.setEditable(true);
 						userList.removeAll();
 					}catch(Exception e) {
+						outputArea.append("Failed to disconnect from server.");
+						connectBtn.setEnabled(false);
+						usernameField.setEditable(false);
+						portField.setEditable(false);
+						isConnected = true;
 						e.printStackTrace();
 					}
 				}else {
+					connectBtn.setEnabled(true);
+					usernameField.setEditable(true);
+					portField.setEditable(true);
 					outputArea.append("You are not connected to a server.\n");
+					isConnected = false;
 				}
 			}
 		});
-		disconnectBtn.setBounds(254, 32, 96, 23);
+		disconnectBtn.setBounds(256, 32, 108, 23);
 		frmClient.getContentPane().add(disconnectBtn);
 		
 		Panel panel = new Panel();
